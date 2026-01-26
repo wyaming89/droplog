@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>指标配置 - droplog.top</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='.9em' font-size='24'>⚙️</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="metrics-config.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-row">
+                <button class="back-btn" id="backBtn" title="返回主页">← 返回</button>
+                <h1>指标配置</h1>
+                <button class="logout-btn" id="logoutBtn" title="退出登录">退出</button>
+            </div>
+            <div class="user-info" id="userInfo">加载中...</div>
+        </header>
+
+        <main class="main-content">
+            <!-- 当前配置的指标 -->
+            <section class="section">
+                <h2 class="section-title">
+                    我的指标
+                    <span class="badge" id="myMetricsCount">0</span>
+                </h2>
+                <div class="info-text">拖拽可调整顺序，点击删除按钮移除指标</div>
+                <div id="myMetricsList" class="metrics-list sortable-list">
+                    <div class="loading">加载中...</div>
+                </div>
+            </section>
+
+            <!-- 所有可用指标 -->
+            <section class="section">
+                <h2 class="section-title">
+                    添加指标
+                    <button class="btn-secondary btn-small" id="addCustomBtn">+ 自定义指标</button>
+                </h2>
+                <div class="info-text">点击指标添加到我的列表</div>
+                <div id="allMetricsList" class="metrics-grid">
+                    <div class="loading">加载中...</div>
+                </div>
+            </section>
+
+            <!-- 保存按钮 -->
+            <div class="save-section">
+                <button class="btn-primary btn-large" id="saveBtn">
+                    保存配置
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 自定义指标模态框 -->
+    <div id="customMetricModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>自定义指标</h3>
+                <button class="modal-close" id="modalCloseBtn">×</button>
+            </div>
+            <form id="customMetricForm" action="javascript:void(0)" method="post">
+                <div class="form-group">
+                    <label for="metricKey">标识符 *</label>
+                    <input type="text" id="metricKey" name="metricKey" required 
+                           pattern="[a-z0-9_]+" 
+                           placeholder="如: my_custom_metric"
+                           title="只能包含小写字母、数字和下划线">
+                    <small>只能包含小写字母、数字和下划线，如 my_custom_metric</small>
+                </div>
+                <div class="form-group">
+                    <label for="metricName">显示名称 *</label>
+                    <input type="text" id="metricName" name="metricName" required placeholder="如: 我的指标">
+                </div>
+                <div class="form-group">
+                    <label for="dataType">数据类型 *</label>
+                    <select id="dataType" name="dataType" required>
+                        <option value="number">数值</option>
+                        <option value="text">文本</option>
+                        <option value="select">选择项</option>
+                    </select>
+                </div>
+                <div class="form-group" id="unitGroup">
+                    <label for="unit">单位</label>
+                    <input type="text" id="unit" name="unit" placeholder="如: kg, ml, 次">
+                </div>
+                <div class="form-group" id="minValueGroup">
+                    <label for="minValue">最小值</label>
+                    <input type="number" id="minValue" name="minValue" step="any" placeholder="如: 0">
+                </div>
+                <div class="form-group" id="maxValueGroup">
+                    <label for="maxValue">最大值</label>
+                    <input type="number" id="maxValue" name="maxValue" step="any" placeholder="如: 100">
+                </div>
+                <div class="form-group" id="decimalPlacesGroup">
+                    <label for="decimalPlaces">小数位数</label>
+                    <input type="number" id="decimalPlaces" name="decimalPlaces" min="0" max="4" value="0">
+                </div>
+                <div class="form-group" id="selectOptionsGroup" style="display: none;">
+                    <label for="selectOptions">选择项 *</label>
+                    <textarea id="selectOptions" name="selectOptions" rows="4" 
+                              placeholder="每行一个选项，如：&#10;选项1&#10;选项2&#10;选项3"></textarea>
+                    <small>每行一个选项</small>
+                </div>
+                <div class="form-group">
+                    <label for="icon">图标（emoji）</label>
+                    <input type="text" id="icon" name="icon" placeholder="如: 📊" maxlength="4">
+                </div>
+                <div class="form-group">
+                    <label for="description">描述</label>
+                    <textarea id="description" name="description" rows="2" placeholder="简短描述此指标的用途"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="modalCancelBtn">取消</button>
+                    <button type="submit" class="btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="metrics-config.js?v=2"></script>
+</body>
+</html>

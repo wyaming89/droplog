@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录 - 健康指标记录</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='.9em' font-size='24'>📋</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container container-login">
+        <header class="header">
+            <h1>健康指标记录</h1>
+            <div class="date-display">请登录后使用</div>
+        </header>
+
+        <main class="main-content">
+            <form class="login-form" id="loginForm" action="javascript:void(0)" method="post">
+                <div class="input-group">
+                    <label class="input-label" for="username">
+                        <span class="label-icon">👤</span>
+                        <span class="label-text">账号</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="username" name="username" class="health-input" placeholder="请输入账号" autocomplete="username">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="password">
+                        <span class="label-icon">🔒</span>
+                        <span class="label-text">密码</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" name="password" class="health-input" placeholder="请输入密码" autocomplete="current-password">
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="loginBtn"><span>登录</span></button>
+                <div class="login-actions">
+                    <a href="login.html#register" id="registerLink">没有账号？注册</a>
+                </div>
+            </form>
+
+            <form class="login-form register-form hidden" id="registerForm" action="javascript:void(0)" method="post">
+                <h2 class="form-title">注册新账号</h2>
+                <div class="input-group">
+                    <label class="input-label" for="regUsername">
+                        <span class="label-icon">👤</span>
+                        <span class="label-text">账号</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="regUsername" name="username" class="health-input" placeholder="2–32 位" autocomplete="username">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="regPassword">
+                        <span class="label-icon">🔒</span>
+                        <span class="label-text">密码</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="regPassword" name="password" class="health-input" placeholder="至少 6 位" autocomplete="new-password">
+                    </div>
+                </div>
+                <button type="submit" class="submit-btn" id="registerBtn"><span>注册</span></button>
+                <div class="login-actions">
+                    <a href="login.html" id="backLoginLink">已有账号？登录</a>
+                </div>
+            </form>
+        </main>
+
+        <div class="toast" id="toast"></div>
+    </div>
+    <script src="login.js"></script>
+</body>
+</html>

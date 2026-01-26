@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>数据可视化 - droplog.top</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='.9em' font-size='24'>📊</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chart.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-row">
+                <button class="back-btn" id="backBtn" title="返回主页">← 返回</button>
+                <h1>数据可视化</h1>
+                <button class="logout-btn" id="logoutBtn">退出</button>
+            </div>
+            <div class="user-info" id="userInfo">加载中...</div>
+        </header>
+
+        <main class="main-content">
+            <!-- 指标选择 -->
+            <section class="section">
+                <h2 class="section-title">选择指标</h2>
+                <div id="metricsSelector" class="metrics-selector">
+                    <div class="loading">加载中...</div>
+                </div>
+            </section>
+
+            <!-- 时间范围选择 -->
+            <section class="section">
+                <h2 class="section-title">时间范围</h2>
+                <div class="time-range-selector">
+                    <button class="time-btn active" data-days="7">最近7天</button>
+                    <button class="time-btn" data-days="30">最近30天</button>
+                    <button class="time-btn" data-days="90">最近90天</button>
+                    <button class="time-btn" data-days="0">全部</button>
+                </div>
+            </section>
+
+            <!-- 图表显示 -->
+            <section class="section">
+                <div id="chartContainer" class="chart-container">
+                    <canvas id="metricsChart"></canvas>
+                </div>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <p>暂无数据</p>
+                    <p class="empty-hint">请先选择指标并记录数据</p>
+                </div>
+            </section>
+
+            <!-- 统计信息 -->
+            <section class="section">
+                <h2 class="section-title">统计信息</h2>
+                <div id="statsContainer" class="stats-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="chart.js?v=1"></script>
+</body>
+</html>

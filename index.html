@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>健康指标记录 - droplog.top</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='.9em' font-size='24'>📋</text></svg>">
+    <link rel="canonical" href="https://droplog.top/">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="header-row">
+                <h1>健康指标记录</h1>
+                <div class="header-actions">
+                    <button class="chart-btn" id="chartBtn" title="数据可视化">📊</button>
+                    <button class="config-btn" id="configBtn" title="指标配置">⚙️</button>
+                    <button class="logout-btn" id="logoutBtn" title="退出登录">退出</button>
+                </div>
+            </div>
+            <div class="user-info" id="userInfo">加载中...</div>
+            <div class="date-display" id="currentDate"></div>
+        </header>
+
+        <!-- 记录表单 -->
+        <main class="main-content">
+            <div class="record-form" id="recordForm">
+                <!-- 动态生成的表单字段 -->
+                <div class="loading" id="formLoading">加载中...</div>
+            </div>
+
+            <!-- 历史记录 -->
+            <div class="history-section">
+                <div class="section-header">
+                    <h2>历史记录</h2>
+                </div>
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">
+                        <p>暂无记录</p>
+                        <p class="empty-hint">开始记录您的健康指标吧</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 提示消息 -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="script.js?v=4"></script>
+</body>
+</html>
