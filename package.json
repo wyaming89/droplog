@@ -1,10 +1,13 @@
 {
-  "name": "health-records-app",
-  "version": "1.0.0",
-  "description": "健康指标记录应用 - 手机端页面",
+  "name": "droplog-health",
+  "version": "2.0.0",
+  "description": "点滴健康 - 记录每日健康",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "install:frontend": "npm install --prefix frontend",
     "static": "http-server -p 8000 -c-1",
     "pm2:start": "pm2 start ecosystem.config.js",
     "pm2:stop": "pm2 stop health-records-app",
@@ -17,6 +20,7 @@
     "migrate:old-records": "node scripts/migrate-old-records.js",
     "migrate:flexible": "node scripts/migrate-flexible-metrics.js",
     "migrate:cumulative": "node scripts/migrate-cumulative.js",
+    "migrate:normalize": "node scripts/migrate-normalize.js",
     "seed": "node scripts/seed-user.js",
     "create-user": "node scripts/create-test-user.js"
   },

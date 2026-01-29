@@ -26,7 +26,8 @@ module.exports = {
       'node_modules',
       'logs',
       '*.log',
-      '.git'
+      '.git',
+      'frontend'
     ]
   }]
 };

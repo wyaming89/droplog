@@ -35,7 +35,22 @@ app.use(cors({
     credentials: false
 }));
 app.use(express.json());
-app.use(express.static(__dirname)); // 提供静态文件服务
+
+// 静态文件服务 - 优先使用新的React前端
+const path = require('path');
+const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
+const fs = require('fs');
+
+// 检查是否存在React前端构建
+const hasReactBuild = fs.existsSync(frontendDistPath);
+
+if (hasReactBuild) {
+    // 使用React前端
+    app.use(express.static(frontendDistPath));
+} else {
+    // 使用旧的静态文件
+    app.use(express.static(__dirname));
+}
 
 // 数据库连接配置
 const pool = new Pool({
@@ -257,30 +272,49 @@ app.get('/api/user-metrics', async (req, res) => {
     }
 });
 
-// 获取当日累计值
-app.get('/api/today-cumulative', async (req, res) => {
+// 获取指定日期的累计值（支持补录场景）
+app.get('/api/daily-cumulative', async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const { date } = req.query;
+        const targetDate = date || new Date().toISOString().split('T')[0];
         
         const result = await pool.query(`
             SELECT 
                 metric_key,
-                SUM(CAST(metric_value AS DECIMAL)) as cumulative_value
-            FROM (
-                SELECT 
-                    jsonb_object_keys(metrics) as metric_key,
-                    jsonb_each_text(metrics) as metric_pair
-                FROM health_records
-                WHERE user_id = $1 
-                AND created_at >= $2
-                AND metrics IS NOT NULL
-            ) as expanded
-            CROSS JOIN LATERAL (
-                SELECT (metric_pair).value as metric_value
-            ) as vals
-            WHERE (expanded.metric_pair).key = expanded.metric_key
-            AND metric_value ~ '^[0-9]+\.?[0-9]*$'
+                SUM(numeric_value) as cumulative_value,
+                COUNT(*) as record_count
+            FROM health_metric_values
+            WHERE user_id = $1 
+            AND record_date = $2
+            AND numeric_value IS NOT NULL
+            GROUP BY metric_key
+        `, [req.user.id, targetDate]);
+
+        const cumulativeData = {};
+        result.rows.forEach(row => {
+            cumulativeData[row.metric_key] = parseFloat(row.cumulative_value) || 0;
+        });
+
+        res.json({ success: true, data: cumulativeData, date: targetDate });
+    } catch (error) {
+        console.error('获取累计错误:', error);
+        res.status(500).json({ success: false, error: '获取累计数据失败' });
+    }
+});
+
+// 兼容旧接口
+app.get('/api/today-cumulative', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const result = await pool.query(`
+            SELECT 
+                metric_key,
+                SUM(numeric_value) as cumulative_value
+            FROM health_metric_values
+            WHERE user_id = $1 
+            AND record_date = $2
+            AND numeric_value IS NOT NULL
             GROUP BY metric_key
         `, [req.user.id, today]);
 
@@ -371,111 +405,166 @@ app.post('/api/user-metrics', async (req, res) => {
     }
 });
 
-// 获取当前用户的健康记录（支持新旧格式）
+// 获取当前用户的健康记录（规范化存储）
 app.get('/api/records', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM health_records WHERE user_id = $1 ORDER BY created_at DESC',
-            [req.user.id]
-        );
-        res.json({
-            success: true,
-            data: result.rows.map(row => {
-                // 优先使用新格式（JSONB metrics），如果不存在则使用旧格式
-                if (row.metrics) {
-                    return {
-                        id: row.id,
-                        metrics: row.metrics,
-                        date: row.created_at
-                    };
-                } else {
-                    // 兼容旧格式
-                    return {
-                        id: row.id,
-                        temperature: parseFloat(row.temperature),
-                        heartRate: row.heart_rate,
-                        oxygen: row.oxygen,
-                        weight: row.weight ? parseFloat(row.weight) : null,
-                        date: row.created_at
-                    };
-                }
-            })
-        });
+        const { metric_key, start_date, end_date, limit = 100 } = req.query;
+        
+        let query = `
+            SELECT 
+                id, metric_key, numeric_value, text_value,
+                record_date, record_time, created_at
+            FROM health_metric_values
+            WHERE user_id = $1
+        `;
+        const params = [req.user.id];
+        let paramIndex = 2;
+
+        if (metric_key) {
+            query += ` AND metric_key = $${paramIndex}`;
+            params.push(metric_key);
+            paramIndex++;
+        }
+
+        if (start_date) {
+            query += ` AND record_date >= $${paramIndex}`;
+            params.push(start_date);
+            paramIndex++;
+        }
+
+        if (end_date) {
+            query += ` AND record_date <= $${paramIndex}`;
+            params.push(end_date);
+            paramIndex++;
+        }
+
+        query += ` ORDER BY record_date DESC, record_time DESC NULLS LAST, created_at DESC`;
+        query += ` LIMIT $${paramIndex}`;
+        params.push(parseInt(limit));
+
+        const result = await pool.query(query, params);
+        
+        // 转换为前端期望的格式
+        const records = result.rows.map(row => ({
+            id: row.id,
+            metrics: {
+                [row.metric_key]: row.numeric_value !== null ? parseFloat(row.numeric_value) : row.text_value
+            },
+            metric_key: row.metric_key,
+            value: row.numeric_value !== null ? parseFloat(row.numeric_value) : row.text_value,
+            record_date: row.record_date,
+            record_time: row.record_time,
+            date: row.created_at
+        }));
+
+        res.json({ success: true, data: records });
     } catch (error) {
         console.error('获取记录错误:', error);
         res.status(500).json({ success: false, error: '获取记录失败' });
     }
 });
 
-// 创建新的健康记录（支持动态字段）
+// 获取各指标最新值
+app.get('/api/latest-values', authMiddleware, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT ON (metric_key)
+                metric_key,
+                numeric_value,
+                text_value,
+                record_date,
+                record_time
+            FROM health_metric_values
+            WHERE user_id = $1
+            ORDER BY metric_key, record_date DESC, record_time DESC NULLS LAST, created_at DESC
+        `, [req.user.id]);
+
+        const latestValues = {};
+        result.rows.forEach(row => {
+            latestValues[row.metric_key] = {
+                value: row.numeric_value !== null ? parseFloat(row.numeric_value) : row.text_value,
+                record_date: row.record_date,
+                record_time: row.record_time
+            };
+        });
+
+        res.json({ success: true, data: latestValues });
+    } catch (error) {
+        console.error('获取最新值错误:', error);
+        res.status(500).json({ success: false, error: '获取最新值失败' });
+    }
+});
+
+// 创建新的健康记录（支持数据补录）
 app.post('/api/records', async (req, res) => {
     try {
-        const { metrics } = req.body;
+        const { metric_key, value, record_date, record_time } = req.body;
 
-        if (!metrics || typeof metrics !== 'object') {
-            return res.status(400).json({ success: false, error: '请提供 metrics 对象' });
+        // 验证必填字段
+        if (!metric_key) {
+            return res.status(400).json({ success: false, error: '请提供 metric_key' });
+        }
+        if (value === undefined || value === null || value === '') {
+            return res.status(400).json({ success: false, error: '请提供 value' });
         }
 
-        // 获取用户配置的指标，用于验证
-        const userMetrics = await pool.query(`
+        // 获取指标配置进行验证
+        const metricConfig = await pool.query(`
             SELECT 
                 mt.metric_key, mt.metric_name, mt.data_type, 
                 mt.min_value, mt.max_value, mt.decimal_places
             FROM user_metrics_config umc
             JOIN metric_templates mt ON umc.metric_key = mt.metric_key
-            WHERE umc.user_id = $1 AND umc.is_active = true
-        `, [req.user.id]);
+            WHERE umc.user_id = $1 AND umc.metric_key = $2 AND umc.is_active = true
+        `, [req.user.id, metric_key]);
 
-        const configuredMetrics = userMetrics.rows.reduce((acc, row) => {
-            acc[row.metric_key] = row;
-            return acc;
-        }, {});
-
-        // 验证提交的指标
-        const errors = [];
-        for (const [key, value] of Object.entries(metrics)) {
-            const config = configuredMetrics[key];
-            
-            if (!config) {
-                errors.push(`指标 ${key} 未配置`);
-                continue;
-            }
-
-            if (config.data_type === 'number') {
-                const numValue = parseFloat(value);
-                if (isNaN(numValue)) {
-                    errors.push(`${config.metric_name} 必须是数字`);
-                } else {
-                    if (config.min_value !== null && numValue < config.min_value) {
-                        errors.push(`${config.metric_name} 不能小于 ${config.min_value}`);
-                    }
-                    if (config.max_value !== null && numValue > config.max_value) {
-                        errors.push(`${config.metric_name} 不能大于 ${config.max_value}`);
-                    }
-                }
-            }
+        if (metricConfig.rows.length === 0) {
+            return res.status(400).json({ success: false, error: `指标 ${metric_key} 未配置` });
         }
 
-        if (errors.length > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                error: errors.join('；') 
-            });
+        const config = metricConfig.rows[0];
+        let numericValue = null;
+        let textValue = null;
+
+        // 根据数据类型处理值
+        if (config.data_type === 'number') {
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                return res.status(400).json({ success: false, error: `${config.metric_name} 必须是数字` });
+            }
+            if (config.min_value !== null && numValue < config.min_value) {
+                return res.status(400).json({ success: false, error: `${config.metric_name} 不能小于 ${config.min_value}` });
+            }
+            if (config.max_value !== null && numValue > config.max_value) {
+                return res.status(400).json({ success: false, error: `${config.metric_name} 不能大于 ${config.max_value}` });
+            }
+            numericValue = numValue;
+        } else {
+            textValue = String(value);
         }
+
+        // 处理日期（支持补录）
+        const targetDate = record_date || new Date().toISOString().split('T')[0];
+        const targetTime = record_time || null;
 
         // 插入记录
-        const result = await pool.query(
-            'INSERT INTO health_records (user_id, metrics, created_at) VALUES ($1, $2, NOW()) RETURNING *',
-            [req.user.id, JSON.stringify(metrics)]
-        );
+        const result = await pool.query(`
+            INSERT INTO health_metric_values 
+            (user_id, metric_key, numeric_value, text_value, record_date, record_time, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, NOW())
+            RETURNING *
+        `, [req.user.id, metric_key, numericValue, textValue, targetDate, targetTime]);
 
         const record = result.rows[0];
         res.status(201).json({
             success: true,
             data: {
                 id: record.id,
-                metrics: record.metrics,
-                date: record.created_at
+                metric_key: record.metric_key,
+                value: numericValue !== null ? numericValue : textValue,
+                record_date: record.record_date,
+                record_time: record.record_time,
+                created_at: record.created_at
             }
         });
     } catch (error) {
@@ -487,7 +576,7 @@ app.post('/api/records', async (req, res) => {
 // 删除所有记录（仅当前用户）
 app.delete('/api/records', async (req, res) => {
     try {
-        await pool.query('DELETE FROM health_records WHERE user_id = $1', [req.user.id]);
+        await pool.query('DELETE FROM health_metric_values WHERE user_id = $1', [req.user.id]);
         res.json({ success: true, message: '所有记录已删除' });
     } catch (error) {
         console.error('删除记录错误:', error);
@@ -500,7 +589,7 @@ app.delete('/api/records/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(
-            'DELETE FROM health_records WHERE id = $1 AND user_id = $2 RETURNING *',
+            'DELETE FROM health_metric_values WHERE id = $1 AND user_id = $2 RETURNING *',
             [id, req.user.id]
         );
         if (result.rows.length === 0) {
@@ -513,10 +602,22 @@ app.delete('/api/records/:id', async (req, res) => {
     }
 });
 
+// SPA 路由支持 - 处理React Router的客户端路由
+app.get('*', (req, res) => {
+    // 如果不是API请求，返回index.html
+    if (!req.path.startsWith('/api')) {
+        if (hasReactBuild) {
+            res.sendFile(path.join(frontendDistPath, 'index.html'));
+        } else {
+            res.sendFile(path.join(__dirname, 'index.html'));
+        }
+    }
+});
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
     console.log('==========================================');
-    console.log('  健康指标记录应用 - 服务器启动');
+    console.log('  点滴健康 - 服务器启动');
     console.log('==========================================');
     console.log(`本地访问: http://localhost:${PORT}`);
     console.log(`公网域名: https://${DOMAIN}`);

@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 健康指标记录应用 - PM2 启动脚本（生产环境）
+# 点滴健康 - PM2 启动脚本（生产环境）
 
 echo "=========================================="
-echo "  健康指标记录应用 - PM2 启动"
+echo "  点滴健康 - PM2 启动"
 echo "=========================================="
 
 # 检查 PM2 是否安装
@@ -19,6 +19,29 @@ fi
 
 # 创建日志目录
 mkdir -p logs
+
+# 检查前端是否已构建
+if [ ! -d "frontend/dist" ]; then
+    echo "⚠️  前端未构建，正在构建..."
+    
+    # 检查前端依赖
+    if [ ! -d "frontend/node_modules" ]; then
+        echo "📦 安装前端依赖..."
+        npm run install:frontend
+    fi
+    
+    # 构建前端
+    echo "🔨 构建前端..."
+    npm run build:frontend
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ 前端构建失败"
+        exit 1
+    fi
+    echo "✅ 前端构建成功"
+else
+    echo "✅ 前端已构建"
+fi
 
 # 检查是否已经在运行
 if pm2 list | grep -q "health-records-app"; then

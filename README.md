@@ -1,14 +1,15 @@
-# 健康指标记录应用
+# 点滴健康
 
-一个简洁美观的手机端健康数据记录应用，用于记录和管理每日的体温、心率和血氧指标。
+记录每日健康 - 一个简洁美观的手机端健康数据记录应用。
+
+> **v2.0 更新**: 前端已重构为现代化的 React + TypeScript + Tailwind CSS 方案，采用暗色主题，支持底部导航、渐变色卡片、数字键盘输入等特性。
 
 ## 功能特性
 
-- 📊 **四项核心指标记录**
-  - 体温（°C）
-  - 心率（bpm）
-  - 血氧（%）
-  - 体重（kg）
+- 📊 **灵活的健康指标记录**
+  - 支持自定义指标（体温、心率、血氧、体重等）
+  - 支持累计型指标（如每日饮水量）
+  - 可在设置中启用/禁用指标
 
 - 👥 **多用户支持**
   - 账号密码登录
@@ -26,14 +27,17 @@
   - 触摸友好的交互界面
   - 支持添加到主屏幕（PWA 风格）
 
-- 🎨 **现代化 UI 设计**
-  - 渐变色主题
-  - 流畅的动画效果
-  - 直观的状态指示（正常/异常颜色）
+- 🎨 **现代化 UI 设计（React 2.0）**
+  - 暗色主题，护眼设计
+  - 渐变色卡片，不同指标不同颜色
+  - 底部导航栏（首页/趋势/我的）
+  - 数字键盘模态框输入
+  - Framer Motion 流畅动画
 
-- 📈 **历史记录查看**
-  - 按时间倒序显示所有记录
-  - 清晰的数据展示
+- 📈 **数据可视化**
+  - Recharts 趋势图表
+  - 历史记录管理
+  - 数据统计分析
 
 ## 环境配置
 
@@ -84,7 +88,17 @@ npm run migrate:old-records
 ### 安装依赖
 
 ```bash
+# 安装后端依赖
 npm install
+
+# 安装前端依赖
+npm run install:frontend
+```
+
+### 构建前端
+
+```bash
+npm run build:frontend
 ```
 
 ### 启动服务器
@@ -95,7 +109,17 @@ npm start
 
 服务器将启动在: **http://localhost:8000**
 
-**注意**: 现在需要使用 Node.js 服务器（不再是静态文件服务器），因为需要连接 Supabase 数据库。
+### 前端开发模式
+
+```bash
+# 启动前端开发服务器（端口 3000，热更新）
+npm run dev:frontend
+
+# 同时启动后端 API（另一个终端）
+npm start
+```
+
+**注意**: 前端开发服务器会自动代理 `/api` 请求到后端 8000 端口。
 
 ### 访问地址
 
@@ -155,38 +179,38 @@ npm start
 
 ```
 easy_log/
-├── index.html          # 主页面（需登录）
-├── login.html          # 登录 / 注册页
-├── login.js            # 登录页脚本
-├── style.css           # 样式文件
-├── script.js           # 主站脚本（含鉴权）
+├── frontend/           # React 前端 (v2.0)
+│   ├── src/
+│   │   ├── components/     # 组件（HealthCard, DataEntryModal 等）
+│   │   ├── pages/          # 页面（HomePage, TrendPage, SettingsPage）
+│   │   ├── hooks/          # 自定义 Hooks
+│   │   ├── services/       # API 服务
+│   │   └── types/          # TypeScript 类型
+│   ├── dist/           # 构建输出（生产环境使用）
+│   └── package.json
 ├── server.js           # 后端 API 服务器
 ├── schema.sql          # 数据库表结构
-├── migration_add_users.sql # 用户表迁移
+├── ecosystem.config.js # PM2 配置
 ├── package.json        # Node.js 项目配置
 ├── .env                # 环境变量配置（需自行创建）
-├── scripts/
-│   ├── migrate-users.js        # 执行用户表迁移
-│   ├── migrate-old-records.js  # 迁移旧记录到指定用户
-│   └── seed-user.js            # 创建首个用户
-├── nginx/              # Nginx 反向代理与 SSL 配置（Cloudflare）
-│   ├── droplog.top.conf              # 标准配置（HTTPS + 反代）
-│   ├── droplog.top.cloudflare.conf   # 带 IP 白名单配置（Full strict 推荐）
-│   └── README.md                     # 部署说明
+├── scripts/            # 数据库迁移脚本
+├── nginx/              # Nginx 反向代理与 SSL 配置
 ├── wechat-verify/      # 微信验证文件目录
-│   ├── README.md                     # 微信验证文件使用说明
-│   └── MP_verify_EXAMPLE.txt         # 示例文件
-├── start-server.sh     # 开发启动脚本
-├── start-server.bat    # 开发启动脚本（Windows）
+├── index.html          # 旧版前端（备用）
+├── style.css           # 旧版样式
+├── script.js           # 旧版脚本
 └── README.md           # 说明文档
 ```
 
 ## 技术说明
 
-- **前端**：HTML + CSS + JavaScript（原生，无框架）
+- **前端（v2.0）**：React 18 + TypeScript + Tailwind CSS + Vite
+  - Framer Motion 动画
+  - Recharts 图表
+  - Lucide React 图标
 - **后端**：Node.js + Express
 - **数据库**：Supabase PostgreSQL
-- **数据存储**：PostgreSQL 数据库（通过 REST API）
+- **部署**：PM2 进程管理
 - **兼容性**：支持所有现代浏览器
 
 ## 数据范围参考
@@ -221,12 +245,14 @@ easy_log/
 - `POST /api/records` - 创建新的健康记录（需登录）
 - `DELETE /api/records/:id` - 删除单条记录（需登录，仅本人）
 
-## 未来可能的改进
+## 改进计划
 
 - [x] 云端数据存储（Supabase）
-- [ ] 用户认证和权限管理
+- [x] 用户认证和权限管理
+- [x] 数据可视化图表（Recharts）
+- [x] React 现代化前端重构
+- [x] 灵活的指标配置系统
 - [ ] 数据导出功能（CSV/JSON）
-- [ ] 数据可视化图表
-- [ ] 数据统计和分析
 - [ ] 数据备份和恢复
 - [ ] 提醒功能
+- [ ] PWA 离线支持

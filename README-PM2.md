@@ -1,4 +1,4 @@
-# PM2 生产环境部署指南
+# 点滴健康 - PM2 生产环境部署指南
 
 ## 快速开始
 
@@ -8,7 +8,19 @@
 npm install -g pm2
 ```
 
-### 2. 启动应用
+### 2. 构建 React 前端（首次部署或前端更新时）
+
+```bash
+# 安装前端依赖
+npm run install:frontend
+
+# 构建前端
+npm run build:frontend
+```
+
+> **重要**: 每次前端代码更新后，都需要重新执行 `npm run build:frontend`
+
+### 3. 启动应用
 
 ```bash
 # 方式一：使用启动脚本（推荐）
@@ -145,4 +157,46 @@ instances: 2  // 或 'max' 使用所有 CPU 核心
 2. 调整内存限制：
 ```javascript
 max_memory_restart: '1G'
+```
+
+## 前端开发与部署
+
+### React 前端（v2.0）
+
+项目已升级为 React 前端，构建文件位于 `frontend/dist/`。
+
+### 本地前端开发
+
+```bash
+# 启动前端开发服务器（端口 3000，热更新）
+npm run dev:frontend
+
+# 同时需要启动后端 API 服务器（端口 8000）
+npm start
+```
+
+### 生产环境部署流程
+
+```bash
+# 1. 拉取最新代码
+git pull
+
+# 2. 安装后端依赖（如有更新）
+npm install
+
+# 3. 安装前端依赖（如有更新）
+npm run install:frontend
+
+# 4. 构建前端
+npm run build:frontend
+
+# 5. 重启 PM2
+npm run pm2:restart
+```
+
+### 一键部署脚本
+
+```bash
+# 完整部署
+git pull && npm install && npm run install:frontend && npm run build:frontend && npm run pm2:restart
 ```
