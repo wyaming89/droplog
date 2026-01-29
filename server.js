@@ -36,20 +36,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// 静态文件服务 - 优先使用新的React前端
+// 静态文件服务 - 使用新的React前端
 const path = require('path');
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
 const fs = require('fs');
 
-// 检查是否存在React前端构建
-const hasReactBuild = fs.existsSync(frontendDistPath);
-
-if (hasReactBuild) {
-    // 使用React前端
+// 提供前端静态文件
+if (fs.existsSync(frontendDistPath)) {
     app.use(express.static(frontendDistPath));
-} else {
-    // 使用旧的静态文件
-    app.use(express.static(__dirname));
 }
 
 // 数据库连接配置
@@ -606,10 +600,10 @@ app.delete('/api/records/:id', async (req, res) => {
 app.get('*', (req, res) => {
     // 如果不是API请求，返回index.html
     if (!req.path.startsWith('/api')) {
-        if (hasReactBuild) {
+        if (fs.existsSync(path.join(frontendDistPath, 'index.html'))) {
             res.sendFile(path.join(frontendDistPath, 'index.html'));
         } else {
-            res.sendFile(path.join(__dirname, 'index.html'));
+            res.status(404).send('Not Found');
         }
     }
 });
