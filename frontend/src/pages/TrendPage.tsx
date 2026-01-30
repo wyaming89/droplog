@@ -34,7 +34,6 @@ export function TrendPage() {
 
     // 根据时间范围过滤
     const now = new Date();
-    const todayStr = getLocalDateString(now);
     
     // 计算过滤起始日期字符串
     let filterDateStr = '1970-01-01';

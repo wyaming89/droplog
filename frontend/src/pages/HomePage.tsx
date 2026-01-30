@@ -6,7 +6,6 @@ import { DataEntryModal } from '@/components/DataEntryModal';
 import { toast } from '@/components/ui/Toast';
 import { useHealthData } from '@/hooks/useHealthData';
 import type { MetricConfig } from '@/types';
-import { getLocalDateString } from '@/utils/dateUtils';
 
 export function HomePage() {
   const { metrics, records, cumulative, loading, saveRecord, refresh, getLatestValue, getPreviousValue } = useHealthData();
