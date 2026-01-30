@@ -11,6 +11,7 @@ import {
   DEFAULT_METRICS,
 } from '@/services/api';
 import type { MetricConfig, HealthRecord } from '@/types';
+import { getLocalDateString, getLocalTimeString } from '@/utils/dateUtils';
 
 const LOCAL_RECORDS_KEY = 'health_records_local';
 const LOCAL_LAST_VALUES_KEY = 'health_records_last_values';
@@ -39,7 +40,7 @@ export function useHealthData() {
         Object.entries(parsed).forEach(([key, val]) => {
           formatted[key] = {
             value: val as number | string,
-            record_date: new Date().toISOString().split('T')[0]
+            record_date: getLocalDateString()
           };
         });
         setLatestValues(formatted);
@@ -51,7 +52,7 @@ export function useHealthData() {
 
   // 保存本地记录（游客模式）
   const saveLocalRecord = useCallback((metricKey: string, value: number | string, recordDate?: string) => {
-    const date = recordDate || new Date().toISOString().split('T')[0];
+    const date = recordDate || getLocalDateString();
     const newRecord: HealthRecord = {
       id: Date.now(),
       metric_key: metricKey,
@@ -142,8 +143,8 @@ export function useHealthData() {
     const result = await createRecord({
       metric_key: metricKey,
       value,
-      record_date: recordDate,
-      record_time: recordTime,
+      record_date: recordDate || getLocalDateString(),
+      record_time: recordTime || getLocalTimeString(),
     });
     
     if (result.success) {

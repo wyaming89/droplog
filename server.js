@@ -159,9 +159,9 @@ app.get('/api/me', authMiddleware, async (req, res) => {
     res.json({ success: true, data: { id: req.user.id, username: req.user.username } });
 });
 
-// ============================================
+// ============================================ 
 // 指标模板管理 API
-// ============================================
+// ============================================ 
 
 // 获取所有指标模板
 app.get('/api/metric-templates', async (req, res) => {
@@ -193,7 +193,7 @@ app.post('/api/metric-templates', async (req, res) => {
         } = req.body;
 
         if (!metric_key || !metric_name || !data_type) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false, 
                 error: '请提供 metric_key, metric_name 和 data_type' 
             });
@@ -201,7 +201,7 @@ app.post('/api/metric-templates', async (req, res) => {
 
         // 验证 data_type
         if (!['number', 'text', 'select'].includes(data_type)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false, 
                 error: 'data_type 必须是 number, text 或 select' 
             });
@@ -209,9 +209,9 @@ app.post('/api/metric-templates', async (req, res) => {
 
         // 验证 metric_key 格式（只允许小写字母、数字和下划线）
         if (!/^[a-z0-9_]+$/.test(metric_key)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false, 
-                error: 'metric_key 只能包含小写字母、数字和下划线' 
+                error: 'metric_key 只能包含小写字母、数字和下划线'
             });
         }
 
@@ -239,9 +239,9 @@ app.post('/api/metric-templates', async (req, res) => {
     }
 });
 
-// ============================================
+// ============================================ 
 // 用户指标配置 API
-// ============================================
+// ============================================ 
 
 // 获取当前用户的指标配置
 app.get('/api/user-metrics', async (req, res) => {
@@ -270,7 +270,7 @@ app.get('/api/user-metrics', async (req, res) => {
 app.get('/api/daily-cumulative', async (req, res) => {
     try {
         const { date } = req.query;
-        const targetDate = date || new Date().toISOString().split('T')[0];
+        const targetDate = date || new Date().toLocaleDateString('sv-SE');
         
         const result = await pool.query(`
             SELECT 
@@ -299,7 +299,7 @@ app.get('/api/daily-cumulative', async (req, res) => {
 // 兼容旧接口
 app.get('/api/today-cumulative', async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('sv-SE');
         
         const result = await pool.query(`
             SELECT 
@@ -330,9 +330,9 @@ app.post('/api/user-metrics', async (req, res) => {
         const { metrics } = req.body; // metrics: [{ metric_key, display_order }]
 
         if (!Array.isArray(metrics)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false, 
-                error: 'metrics 必须是数组' 
+                error: 'metrics 必须是数组'
             });
         }
 
@@ -392,9 +392,9 @@ app.post('/api/user-metrics', async (req, res) => {
         }
     } catch (error) {
         console.error('更新用户指标配置错误:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false, 
-            error: error.message || '更新配置失败' 
+            error: error.message || '更新配置失败'
         });
     }
 });
@@ -538,8 +538,9 @@ app.post('/api/records', async (req, res) => {
         }
 
         // 处理日期（支持补录）
-        const targetDate = record_date || new Date().toISOString().split('T')[0];
-        const targetTime = record_time || null;
+        const now = new Date();
+        const targetDate = record_date || now.toLocaleDateString('sv-SE');
+        const targetTime = record_time || now.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
         // 插入记录
         const result = await pool.query(`

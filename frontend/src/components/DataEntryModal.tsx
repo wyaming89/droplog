@@ -3,6 +3,7 @@ import { X, Delete, Calendar, Check, ChevronLeft, ChevronRight } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/Toast';
 import type { MetricConfig } from '@/types';
+import { getLocalDateString } from '@/utils/dateUtils';
 
 interface DataEntryModalProps {
   metric: MetricConfig;
@@ -31,8 +32,8 @@ export function DataEntryModal({ metric, currentValue, cumulative, onClose, onSa
   
   // 日期选择（支持补录）
   const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(today.toISOString().split('T')[0]);
-  const isToday = selectedDate === today.toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString(today));
+  const isToday = selectedDate === getLocalDateString(today);
 
   const theme = colorThemes[metric.metric_key] || colorThemes.default;
   const decimalPlaces = metric.decimal_places || 0;
@@ -43,7 +44,7 @@ export function DataEntryModal({ metric, currentValue, cumulative, onClose, onSa
     current.setDate(current.getDate() + days);
     // 不能选择未来日期
     if (current <= today) {
-      setSelectedDate(current.toISOString().split('T')[0]);
+      setSelectedDate(getLocalDateString(current));
     }
   };
   
@@ -54,7 +55,7 @@ export function DataEntryModal({ metric, currentValue, cumulative, onClose, onSa
     }
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (selectedDate === yesterday.toISOString().split('T')[0]) {
+    if (selectedDate === getLocalDateString(yesterday)) {
       return '昨天';
     }
     return date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });

@@ -6,6 +6,7 @@ import { DataEntryModal } from '@/components/DataEntryModal';
 import { toast } from '@/components/ui/Toast';
 import { useHealthData } from '@/hooks/useHealthData';
 import type { MetricConfig } from '@/types';
+import { getLocalDateString } from '@/utils/dateUtils';
 
 export function HomePage() {
   const { metrics, records, cumulative, loading, saveRecord, refresh, getLatestValue, getPreviousValue } = useHealthData();
@@ -126,7 +127,7 @@ export function HomePage() {
               // 显示记录日期，如果是补录则显示补录日期
               const recordDate = record.record_date;
               const createdDate = new Date(record.date);
-              const isBackfill = recordDate !== createdDate.toISOString().split('T')[0];
+              const isBackfill = recordDate !== getLocalDateString(createdDate);
 
               return (
                 <motion.div
