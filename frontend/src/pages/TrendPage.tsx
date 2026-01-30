@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/components/ui/Toast';
 import { useHealthData } from '@/hooks/useHealthData';
+import { getLocalDateString } from '@/utils/dateUtils';
 
 // 颜色配置
 const colorConfig: Record<string, string> = {
@@ -33,29 +34,59 @@ export function TrendPage() {
 
     // 根据时间范围过滤
     const now = new Date();
-    let filterDate = new Date(0);
+    const todayStr = getLocalDateString(now);
+    
+    // 计算过滤起始日期字符串
+    let filterDateStr = '1970-01-01';
+    
     if (timeRange === 'week') {
-      filterDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const d = new Date(now);
+      d.setDate(d.getDate() - 7);
+      filterDateStr = getLocalDateString(d);
     } else if (timeRange === 'month') {
-      filterDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const d = new Date(now);
+      d.setDate(d.getDate() - 30);
+      filterDateStr = getLocalDateString(d);
     }
 
-    const filteredRecords = records.filter(r => new Date(r.date) >= filterDate);
+    // 使用 record_date 进行过滤
+    const filteredRecords = records.filter(r => r.record_date >= filterDateStr);
 
-    // 按日期分组并取每天最后一条记录
+    // 按日期分组并取每天最后一条记录（或累计求和）
     const dailyData: Record<string, { date: string; value: number }> = {};
     
-    filteredRecords.forEach(record => {
-      const dateKey = new Date(record.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
-      const value = record.metrics[activeMetric];
+    // 按照日期排序确保处理顺序
+    const sortedRecords = [...filteredRecords].sort((a, b) => {
+        if (a.record_date !== b.record_date) return a.record_date.localeCompare(b.record_date);
+        // 如果有时间，按时间排序
+        if (a.record_time && b.record_time) return a.record_time.localeCompare(b.record_time);
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    sortedRecords.forEach(record => {
+      // 使用 record_date 作为 key
+      const dateKey = record.record_date; 
+      // 格式化日期显示 MM/DD
+      const dateDisplay = new Date(record.record_date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
       
-      if (value !== undefined && typeof value === 'number') {
-        dailyData[dateKey] = { date: dateKey, value };
+      const value = typeof record.value === 'number' ? record.value : parseFloat(record.value as string);
+      
+      if (!isNaN(value)) {
+        if (currentMetricConfig?.is_cumulative) {
+          // 累计型指标：同一天累加
+          if (!dailyData[dateKey]) {
+            dailyData[dateKey] = { date: dateDisplay, value: 0 };
+          }
+          dailyData[dateKey].value += value;
+        } else {
+          // 非累计型：取最后一条（已排序）
+          dailyData[dateKey] = { date: dateDisplay, value };
+        }
       }
     });
 
-    return Object.values(dailyData).reverse();
-  }, [activeMetric, records, timeRange]);
+    return Object.values(dailyData);
+  }, [activeMetric, records, timeRange, currentMetricConfig]);
 
   // 计算统计数据
   const stats = useMemo(() => {
@@ -70,8 +101,14 @@ export function TrendPage() {
     const max = Math.max(...values);
     const trend = values.length > 1 ? current - values[0] : 0;
 
-    return { current, avg, min, max, trend };
-  }, [chartData]);
+    return { 
+        current: typeof current === 'number' ? current.toFixed(currentMetricConfig?.decimal_places || 0) : current, 
+        avg, 
+        min: typeof min === 'number' ? min.toFixed(currentMetricConfig?.decimal_places || 0) : min, 
+        max: typeof max === 'number' ? max.toFixed(currentMetricConfig?.decimal_places || 0) : max, 
+        trend 
+    };
+  }, [chartData, currentMetricConfig]);
 
   const handleDelete = async (id: number) => {
     const result = await removeRecord(id);
@@ -244,11 +281,14 @@ export function TrendPage() {
             }
             
             return filteredRecords.map((record) => {
-              const date = new Date(record.date);
-              const value = record.metrics[activeMetric || ''];
-              const displayValue = typeof value === 'number' 
+              // 使用 record_date 和 record_time 显示
+              const recordDate = record.record_date;
+              const recordTime = record.record_time ? record.record_time.slice(0, 5) : '';
+              
+              const value = typeof record.value === 'number' ? record.value : parseFloat(record.value as string);
+              const displayValue = !isNaN(value)
                 ? value.toFixed(currentMetricConfig?.decimal_places || 0)
-                : value;
+                : record.value;
 
               return (
                 <motion.div
@@ -259,11 +299,13 @@ export function TrendPage() {
                 >
                   <div>
                     <div className="text-sm text-gray-400">
-                      {date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      {recordDate}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
+                    {recordTime && (
+                      <div className="text-xs text-gray-500">
+                        {recordTime}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
