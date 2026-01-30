@@ -124,10 +124,8 @@ export function HomePage() {
                 ? record.value.toFixed(metricConfig.decimal_places || 0)
                 : record.value;
               
-              // 显示记录日期，如果是补录则显示补录日期
+              // 显示记录日期
               const recordDate = record.record_date;
-              const createdDate = new Date(record.date);
-              const isBackfill = recordDate !== getLocalDateString(createdDate);
 
               return (
                 <motion.div
@@ -148,9 +146,6 @@ export function HomePage() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-400">{recordDate}</div>
-                      {isBackfill && (
-                        <div className="text-xs text-orange-400">补录</div>
-                      )}
                     </div>
                   </div>
                 </motion.div>

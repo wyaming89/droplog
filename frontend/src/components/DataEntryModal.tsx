@@ -196,7 +196,7 @@ export function DataEntryModal({ metric, currentValue, cumulative, onClose, onSa
             <div className="flex items-center gap-2 text-gray-400 text-sm">
               <Calendar className="w-4 h-4" />
               <span className={!isToday ? 'text-orange-400' : ''}>
-                {formatSelectedDate()} {!isToday && <span className="text-xs">(补录)</span>}
+                {formatSelectedDate()}
               </span>
             </div>
             <button
