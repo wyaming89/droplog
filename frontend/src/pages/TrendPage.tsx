@@ -49,10 +49,14 @@ export function TrendPage() {
     }
 
     // 使用 record_date 进行过滤
-    const filteredRecords = records.filter(r => r.record_date >= filterDateStr);
+    // 同时过滤 metric_key，确保只统计当前选中的指标
+    const filteredRecords = records.filter(r => 
+        r.record_date >= filterDateStr && 
+        r.metric_key === activeMetric
+    );
 
     // 按日期分组并取每天最后一条记录（或累计求和）
-    const dailyData: Record<string, { date: string; value: number }> = {};
+    const dailyMap: Record<string, { fullDate: string; date: string; value: number }> = {};
     
     // 按照日期排序确保处理顺序
     const sortedRecords = [...filteredRecords].sort((a, b) => {
@@ -63,7 +67,6 @@ export function TrendPage() {
     });
 
     sortedRecords.forEach(record => {
-      // 使用 record_date 作为 key
       const dateKey = record.record_date; 
       // 格式化日期显示 MM/DD
       const dateDisplay = new Date(record.record_date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
@@ -73,18 +76,19 @@ export function TrendPage() {
       if (!isNaN(value)) {
         if (currentMetricConfig?.is_cumulative) {
           // 累计型指标：同一天累加
-          if (!dailyData[dateKey]) {
-            dailyData[dateKey] = { date: dateDisplay, value: 0 };
+          if (!dailyMap[dateKey]) {
+            dailyMap[dateKey] = { fullDate: dateKey, date: dateDisplay, value: 0 };
           }
-          dailyData[dateKey].value += value;
+          dailyMap[dateKey].value += value;
         } else {
           // 非累计型：取最后一条（已排序）
-          dailyData[dateKey] = { date: dateDisplay, value };
+          dailyMap[dateKey] = { fullDate: dateKey, date: dateDisplay, value };
         }
       }
     });
 
-    return Object.values(dailyData);
+    // 转换回数组并再次按照 fullDate 排序，确保图表从左到右是时间正序
+    return Object.values(dailyMap).sort((a, b) => a.fullDate.localeCompare(b.fullDate));
   }, [activeMetric, records, timeRange, currentMetricConfig]);
 
   // 计算统计数据
